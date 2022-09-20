@@ -1,0 +1,16 @@
+package com.example.user
+
+import androidx.lifecycle.LiveData
+import androidx.room.*
+
+@Dao
+interface userDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addUser(user:User)
+
+    @Query("select * from user_details order by id asc")
+    fun readUsers():LiveData<List<User>>
+
+    @Delete
+    fun deleteUser(user:User)
+}
