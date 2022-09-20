@@ -1,20 +1,36 @@
 package com.example.user
 
+import android.Manifest
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.provider.Settings
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import com.karumi.dexter.Dexter
+import com.karumi.dexter.MultiplePermissionsReport
+import com.karumi.dexter.PermissionToken
+import com.karumi.dexter.listener.PermissionDeniedResponse
+import com.karumi.dexter.listener.PermissionGrantedResponse
+import com.karumi.dexter.listener.PermissionRequest
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import com.karumi.dexter.listener.single.PermissionListener
 import java.io.IOException
 
 class NewUser : AppCompatActivity() {
     val PICK_IMAGE = 1
     lateinit var myViewModel:viewModel
+
+    val GALLERY_REQUEST_CODE = 2
+    val CAMERA_REQUEST_CODE = 1
 
     lateinit var imageToBeLoaded: ImageView
     lateinit var saveButton: Button
@@ -35,11 +51,17 @@ class NewUser : AppCompatActivity() {
         editTextPhone = findViewById(R.id.etPhone)
 
         imageToBeLoaded.setOnClickListener {
-            val galleryIntent = Intent()
-            galleryIntent.setType("image/*")
-                .action = Intent.ACTION_GET_CONTENT
-
-            startActivityForResult(Intent.createChooser(galleryIntent,"Pick Image"),PICK_IMAGE)
+            val pictureDialog = AlertDialog.Builder(this)
+            pictureDialog.setTitle("Select Action")
+            val pictureDialogItem = arrayOf("Open Gallery","Open Camera")
+            pictureDialog.setItems(pictureDialogItem) {
+                    dialog, which ->
+                when(which){
+                    0->galleryCheckPermission()
+                    1->cameraCheckPermission()
+                }
+            }
+            pictureDialog.show()
         }
         saveButton.setOnClickListener {
             val userFace =
@@ -59,22 +81,110 @@ class NewUser : AppCompatActivity() {
 
 
     }
+
+    private fun cameraCheckPermission()
+    {
+        Dexter.withContext(this)
+            .withPermissions(Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.CAMERA).withListener(
+                object : MultiplePermissionsListener
+                {
+                    override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
+                        report?.let {
+                            if(report.areAllPermissionsGranted()) {
+                                camera()
+                            }
+                        }
+                    }
+
+                    override fun onPermissionRationaleShouldBeShown(
+                        p0: MutableList<PermissionRequest>?,
+                        p1: PermissionToken?
+                    ) {
+                        showRotationalDialogForPermission()
+                    }
+                }
+            ).onSameThread().check()
+    }
+    private fun galleryCheckPermission()
+    {
+        Dexter.withContext(this).withPermission(
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ).withListener(object: PermissionListener {
+            override fun onPermissionGranted(p0: PermissionGrantedResponse?) {
+                gallery()
+            }
+
+            override fun onPermissionDenied(p0: PermissionDeniedResponse?) {
+                Toast.makeText(this@NewUser,"Storage Permission Denied",Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onPermissionRationaleShouldBeShown(
+                p0: PermissionRequest?,
+                p1: PermissionToken?
+            ) {
+                showRotationalDialogForPermission()
+            }
+        }).onSameThread().check()
+    }
+
+    private fun gallery()
+    {
+        intent = Intent(Intent.ACTION_PICK)
+        intent.type = "image/*"
+        startActivityForResult(intent, GALLERY_REQUEST_CODE)
+    }
+
+    private fun camera(){
+        intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        startActivityForResult(intent,CAMERA_REQUEST_CODE)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode==PICK_IMAGE && resultCode== RESULT_OK){
-            data!!.data.also { imageUri = it }
-            try {
-                bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                imageToBeLoaded.setImageBitmap(bitmap)
+
+        if(resultCode == Activity.RESULT_OK)
+        {
+            when(requestCode)
+            {
+                CAMERA_REQUEST_CODE->{
+                    bitmap = data?.extras?.get("data") as Bitmap
+                    imageToBeLoaded.setImageBitmap(bitmap)
+                }
+
+                GALLERY_REQUEST_CODE->{
+                    data!!.data.also{ imageUri = it }
+                    bitmap = MediaStore.Images.Media.getBitmap(contentResolver,imageUri)
+                        imageToBeLoaded.setImageBitmap(bitmap)
+                }
             }
-            catch (e: IOException){
-                e.printStackTrace()
-            }
-        }
-        else if(resultCode== RESULT_CANCELED){
-            Toast.makeText(applicationContext,"Cancelled",Toast.LENGTH_LONG).show()
         }
     }
+
+    private fun showRotationalDialogForPermission(){
+        AlertDialog.Builder(this)
+            .setMessage("It looks like you have turned off permissions"
+                    +"required for this feature. It can be enable from App Settings")
+            .setPositiveButton("Go to settings"
+            ) { _, _ ->
+                try
+                {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    val uri = Uri.fromParts("package",packageName,null)
+                    intent.data = uri
+                    startActivity(intent)
+                }
+                catch (e: ActivityNotFoundException)
+                {
+                    e.printStackTrace()
+                }
+            }
+            .setNegativeButton("Cancel"
+            ) { dialog,_ ->
+                dialog.dismiss()
+            }.show()
+    }
+
+
 
     override fun onBackPressed() {
         super.onBackPressed()

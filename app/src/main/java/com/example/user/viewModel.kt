@@ -28,5 +28,12 @@ class viewModel(context: Context) : ViewModel() {
         }
     }
 
+    fun deleteAll()
+    {
+        viewModelScope.launch {
+            repository.deleteAll()
+        }
+    }
+
 
 }

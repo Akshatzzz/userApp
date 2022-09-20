@@ -10,11 +10,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var myViewModel: viewModel
     lateinit var recyclerView: RecyclerView
     lateinit var adapter : MyAdapter
+    lateinit var delAll: FloatingActionButton
     private lateinit var fab:FloatingActionButton
 //    private lateinit var userSwipe:User
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +38,11 @@ class MainActivity : AppCompatActivity() {
                 adapter.updateList(it)
             }
         }
+        delAll=findViewById(R.id.deleteAll)
 
+        delAll.setOnClickListener{
+            deleteAllValues()
+        }
 
         fab=findViewById(R.id.FAB)
         fab.setOnClickListener{
@@ -82,5 +90,9 @@ class MainActivity : AppCompatActivity() {
 //            myViewModel.deleteUser(userSwipe)
 //            flag = 0
 //        }
+    }
+
+    private fun deleteAllValues() {
+        myViewModel.deleteAll()
     }
 }
