@@ -13,4 +13,7 @@ interface userDao {
 
     @Delete
     fun deleteUser(user:User)
+
+    @Query("delete from user_details")
+    suspend fun deleteEverything()
 }

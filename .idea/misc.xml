@@ -5,7 +5,7 @@
       <map>
         <entry key="app/src/main/res/drawable/ic_baseline_tag_faces_24.xml" value="0.1495" />
         <entry key="app/src/main/res/drawable/roundback.xml" value="0.1495" />
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.16" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.14" />
         <entry key="app/src/main/res/layout/activity_new_user.xml" value="0.21041666666666667" />
         <entry key="app/src/main/res/layout/activity_splash.xml" value="0.15" />
         <entry key="app/src/main/res/layout/user_element.xml" value="0.18" />
